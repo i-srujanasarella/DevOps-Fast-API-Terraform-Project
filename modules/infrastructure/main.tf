@@ -40,9 +40,9 @@ resource "aws_route_table" "main" {
 
 # 4. Create Subnet
 resource "aws_subnet" "main" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = var.subnet_cidr
-  availability_zone = var.availability_zone
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.subnet_cidr
+  availability_zone       = var.availability_zone
   map_public_ip_on_launch = true
 
   tags = {
@@ -120,7 +120,7 @@ resource "aws_network_interface" "main" {
 resource "aws_eip" "main" {
   domain            = "vpc"
   network_interface = aws_network_interface.main.id
-  depends_on        = [aws_internet_gateway.main]
+  depends_on         = [aws_internet_gateway.main]
 
   tags = {
     Name        = "${var.environment}-eip"
@@ -130,35 +130,37 @@ resource "aws_eip" "main" {
 
 # 9. Create EC2 Instance
 resource "aws_instance" "main" {
-  ami               = var.ami_id
-  instance_type     = var.instance_type
-  availability_zone = var.availability_zone
-  key_name          = var.key_name
-  subnet_id         = aws_subnet.main.id
+  ami                         = var.ami_id
+  instance_type               = var.instance_type
+  availability_zone           = var.availability_zone
+  key_name                    = var.key_name
+  subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
 
   vpc_security_group_ids = [aws_security_group.main.id]
 
   user_data = <<-EOF
               #!/bin/bash
+              set -e
+
               # Update system
-              sudo apt-get update -y
-              sudo apt-get upgrade -y
+              apt-get update -y
+              apt-get upgrade -y
 
               # Install Docker
-              sudo apt-get install -y docker.io
-              sudo systemctl start docker
-              sudo systemctl enable docker
-              sudo usermod -aG docker ubuntu
+              apt-get install -y docker.io
+              systemctl start docker
+              systemctl enable docker
+              usermod -aG docker ubuntu
 
-              # Install Python and Pip
-              sudo apt-get install -y python3 python3-pip
+              # Install Python, pip, and venv
+              apt-get install -y python3 python3-pip python3.12-venv
 
-              # Install FastAPI and Uvicorn
-              pip3 install fastapi uvicorn
+              # Create application directory
+              mkdir -p /app
+              chown -R ubuntu:ubuntu /app
 
               # Create FastAPI app
-              mkdir -p /app
               cat > /app/main.py <<'APPEOF'
               from fastapi import FastAPI
 
@@ -173,9 +175,17 @@ resource "aws_instance" "main" {
                   return {"status": "healthy", "environment": "${var.environment}"}
               APPEOF
 
-              # Run FastAPI app
+              # Set up Python virtual environment
               cd /app
-              uvicorn main:app --host 0.0.0.0 --port 8000 &
+              python3 -m venv venv
+              source venv/bin/activate
+
+              # Install dependencies
+              pip install --upgrade pip
+              pip install fastapi uvicorn
+
+              # Start FastAPI application
+              nohup /app/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 > /home/ubuntu/fastapi.log 2>&1 &
               EOF
 
   tags = {
