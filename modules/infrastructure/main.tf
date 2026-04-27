@@ -43,6 +43,7 @@ resource "aws_subnet" "main" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = var.subnet_cidr
   availability_zone = var.availability_zone
+  map_public_ip_on_launch = true
 
   tags = {
     Name        = "${var.environment}-subnet"
@@ -134,6 +135,7 @@ resource "aws_instance" "main" {
   availability_zone = var.availability_zone
   key_name          = var.key_name
   subnet_id         = aws_subnet.main.id
+  associate_public_ip_address = true
 
   vpc_security_group_ids = [aws_security_group.main.id]
 
