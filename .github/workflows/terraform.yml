@@ -181,21 +181,6 @@ jobs:
         run: |
           docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:qa-${{ github.sha }}
 
-      - name: Debug EC2 Connection
-        if: github.event_name == 'push'
-        env:
-          EC2_HOST: ${{ secrets.EC2_QA_HOST }}
-          EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          echo "EC2 Host value: '$EC2_HOST'"
-          echo "$EC2_KEY" > key.pem
-          chmod 600 key.pem
-          echo "Trying to ping host..."
-          ping -c 3 $EC2_HOST || true
-          echo "Trying SSH connection..."
-          ssh -v -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i key.pem ubuntu@$EC2_HOST echo "SSH works" || true
-          rm -f key.pem
-
       - name: Deploy to EC2
         if: github.event_name == 'push'
         env:
