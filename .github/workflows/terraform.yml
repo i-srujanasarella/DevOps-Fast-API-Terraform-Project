@@ -71,6 +71,30 @@ jobs:
         run: |
           docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:dev-${{ github.sha }}
 
+      - name: Deploy to EC2
+        if: github.event_name == 'push'
+        env:
+          EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
+          EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          echo "$EC2_KEY" > key.pem
+          chmod 600 key.pem
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'ENDSSH'
+            # Login to ECR
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+            
+            # Stop and remove existing container
+            docker stop fastapi || true
+            docker rm fastapi || true
+            
+            # Pull latest image
+            docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:dev-${{ github.sha }}
+            
+            # Run new container
+            docker run -d -p 8000:8000 --restart always --name fastapi ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:dev-${{ github.sha }}
+          ENDSSH
+          rm -f key.pem
+      
       - name: Show App URL
         if: github.event_name == 'push'
         run: terraform output application_url
@@ -130,6 +154,30 @@ jobs:
         run: |
           docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:qa-${{ github.sha }}
 
+      - name: Deploy to EC2
+        if: github.event_name == 'push'
+        env:
+          EC2_HOST: ${{ secrets.EC2_QA_HOST }}
+          EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          echo "$EC2_KEY" > key.pem
+          chmod 600 key.pem
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'ENDSSH'
+            # Login to ECR
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+            
+            # Stop and remove existing container
+            docker stop fastapi || true
+            docker rm fastapi || true
+            
+            # Pull latest image
+            docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:qa-${{ github.sha }}
+            
+            # Run new container
+            docker run -d -p 8000:8000 --restart always --name fastapi ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:qa-${{ github.sha }}
+          ENDSSH
+          rm -f key.pem
+
       - name: Show App URL
         if: github.event_name == 'push'
         run: terraform output application_url
@@ -188,6 +236,30 @@ jobs:
         if: github.event_name == 'push'
         run: |
           docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:prod-${{ github.sha }}
+
+      - name: Deploy to EC2
+        if: github.event_name == 'push'
+        env:
+          EC2_HOST: ${{ secrets.EC2_PROD_HOST }}
+          EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          echo "$EC2_KEY" > key.pem
+          chmod 600 key.pem
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'ENDSSH'
+            # Login to ECR
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+            
+            # Stop and remove existing container
+            docker stop fastapi || true
+            docker rm fastapi || true
+            
+            # Pull latest image
+            docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:prod-${{ github.sha }}
+            
+            # Run new container
+            docker run -d -p 8000:8000 --restart always --name fastapi ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:prod-${{ github.sha }}
+          ENDSSH
+          rm -f key.pem
 
       - name: Show App URL
         if: github.event_name == 'push'
