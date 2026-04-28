@@ -37,8 +37,3 @@ variable "aws_region" {
   description = "AWS region"
   type        = string
 }
-
-variable "private_ip" {
-  description = "Private IP for network interface"
-  type        = string
-}
