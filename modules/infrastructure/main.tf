@@ -111,35 +111,34 @@ resource "aws_instance" "main" {
   availability_zone           = var.availability_zone
   key_name                    = var.key_name
   subnet_id                   = aws_subnet.main.id
-  associate_public_ip_address = true
-  user_data_replace_on_change = true   
+  user_data_replace_on_change = true
 
   vpc_security_group_ids = [aws_security_group.main.id]
 
-user_data = <<-EOF
+  user_data = <<-EOF
 #!/bin/bash
-    set -e
+set -e
 
 # Update system
-    apt-get update -y
+apt-get update -y
 
 # Install Docker
-    apt-get install -y docker.io
-    systemctl start docker
-    systemctl enable docker
+apt-get install -y docker.io
+systemctl start docker
+systemctl enable docker
 
 # Install AWS CLI
-    apt-get install -y unzip curl
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-    unzip /tmp/awscliv2.zip -d /tmp
-    /tmp/aws/install
+apt-get install -y unzip curl
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+unzip /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
 
 # Create application directory
-    mkdir -p /app
+mkdir -p /app
 
 # Create FastAPI app
-    cat > /app/main.py <<'APPEOF'
-    from fastapi import FastAPI
+cat > /app/main.py <<'APPEOF'
+from fastapi import FastAPI
 
 app = FastAPI()
 
@@ -172,6 +171,18 @@ EOF
 
   tags = {
     Name        = "${var.environment}-web-server"
+    Environment = var.environment
+  }
+}
+
+# 8. Elastic IP
+resource "aws_eip" "main" {
+  instance   = aws_instance.main.id
+  domain     = "vpc"
+  depends_on = [aws_internet_gateway.main]
+
+  tags = {
+    Name        = "${var.environment}-eip"
     Environment = var.environment
   }
 }
