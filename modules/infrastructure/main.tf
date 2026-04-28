@@ -116,24 +116,30 @@ resource "aws_instance" "main" {
 
   vpc_security_group_ids = [aws_security_group.main.id]
 
-  user_data = <<-EOF
+user_data = <<-EOF
 #!/bin/bash
-set -e
+    set -e
 
 # Update system
-apt-get update -y
+    apt-get update -y
 
 # Install Docker
-apt-get install -y docker.io
-systemctl start docker
-systemctl enable docker
+    apt-get install -y docker.io
+    systemctl start docker
+    systemctl enable docker
+
+# Install AWS CLI
+    apt-get install -y unzip curl
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+    unzip /tmp/awscliv2.zip -d /tmp
+    /tmp/aws/install
 
 # Create application directory
-mkdir -p /app
+    mkdir -p /app
 
 # Create FastAPI app
-cat > /app/main.py <<'APPEOF'
-from fastapi import FastAPI
+    cat > /app/main.py <<'APPEOF'
+    from fastapi import FastAPI
 
 app = FastAPI()
 
@@ -162,11 +168,6 @@ COPY . .
 EXPOSE 8000
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 DOCKEREOF
-
-# Build and run Docker container
-cd /app
-docker build -t fastapi-app:v1 .
-docker run -d -p 8000:8000 --restart always --name fastapi fastapi-app:v1
 EOF
 
   tags = {
