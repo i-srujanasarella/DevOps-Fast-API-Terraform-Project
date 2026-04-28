@@ -135,7 +135,6 @@ resource "aws_instance" "main" {
   availability_zone           = var.availability_zone
   key_name                    = var.key_name
   subnet_id                   = aws_subnet.main.id
-  associate_public_ip_address = true
 
   vpc_security_group_ids = [aws_security_group.main.id]
 
