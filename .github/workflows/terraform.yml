@@ -61,7 +61,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          EC2_IP=$(terraform output -raw instance_public_ip | tr -d '"' | tr -d '\n' | xargs)
+          EC2_IP=$(terraform output -raw instance_public_ip 2>/dev/null | tail -1)
           echo "EC2 IP: $EC2_IP"
           gh secret set EC2_DEV_HOST --body "$EC2_IP" --repo ${{ github.repository }}
 
@@ -162,7 +162,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          EC2_IP=$(terraform output -raw instance_public_ip | tr -d '"' | tr -d '\n' | xargs)
+          EC2_IP=$(terraform output -raw instance_public_ip 2>/dev/null | tail -1)
           echo "EC2 IP: $EC2_IP"
           gh secret set EC2_QA_HOST --body "$EC2_IP" --repo ${{ github.repository }}
 
@@ -278,7 +278,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          EC2_IP=$(terraform output -raw instance_public_ip | tr -d '"' | tr -d '\n' | xargs)
+          EC2_IP=$(terraform output -raw instance_public_ip 2>/dev/null | tail -1)
           echo "EC2 IP: $EC2_IP"
           gh secret set EC2_PROD_HOST --body "$EC2_IP" --repo ${{ github.repository }}
 
