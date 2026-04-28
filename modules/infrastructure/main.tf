@@ -162,32 +162,49 @@ resource "aws_instance" "main" {
 
               # Create FastAPI app
               cat > /app/main.py <<'APPEOF'
-              from fastapi import FastAPI
+from fastapi import FastAPI
 
-              app = FastAPI()
+app = FastAPI()
 
-              @app.get("/")
-              def read_root():
-                  return {"message": "Hello from ${var.environment} environment!"}
+@app.get("/")
+def read_root():
+    return {"message": "Hello from ${var.environment} environment!"}
 
-              @app.get("/health")
-              def health_check():
-                  return {"status": "healthy", "environment": "${var.environment}"}
-              APPEOF
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "environment": "${var.environment}"}
+APPEOF
 
               # Set up Python virtual environment
               cd /app
               python3 -m venv venv
-              source venv/bin/activate
 
-              # Install dependencies
-              pip install --upgrade pip
-              pip install fastapi uvicorn
+              # Install dependencies using full path
+              /app/venv/bin/pip install --upgrade pip
+              /app/venv/bin/pip install fastapi uvicorn
 
-              # Start FastAPI application
-              nohup /app/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 > /home/ubuntu/fastapi.log 2>&1 &
+              # Create systemd service so app starts automatically on reboot
+              cat > /etc/systemd/system/fastapi.service <<'SERVICEEOF'
+[Unit]
+Description=FastAPI Application
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/app
+ExecStart=/app/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+
+              # Enable and start service
+              systemctl daemon-reload
+              systemctl enable fastapi
+              systemctl start fastapi
               EOF
-
   tags = {
     Name        = "${var.environment}-web-server"
     Environment = var.environment

@@ -56,6 +56,11 @@ jobs:
         if: github.event_name == 'push'
         run: terraform apply -auto-approve
 
+      - name: Show App URL
+        if: github.event_name == 'push'
+        working-directory: environments/dev  
+        run: terraform output app_url
+
   terraform-qa:
     name: Terraform QA
     runs-on: ubuntu-latest
@@ -95,6 +100,11 @@ jobs:
       - name: Terraform Apply
         if: github.event_name == 'push'
         run: terraform apply -auto-approve
+      
+      - name: Show App URL
+        if: github.event_name == 'push'
+        working-directory: environments/qa
+        run: terraform output app_url
 
   terraform-prod:
     name: Terraform Prod
@@ -135,6 +145,11 @@ jobs:
       - name: Terraform Apply
         if: github.event_name == 'push'
         run: terraform apply -auto-approve
+
+      - name: Show App URL
+        if: github.event_name == 'push'
+        working-directory: environments/prod
+        run: terraform output app_url
 
       - name: Terraform Destroy
         if: github.event_name == 'push'
