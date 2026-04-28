@@ -104,37 +104,14 @@ resource "aws_security_group" "main" {
   }
 }
 
-# 7. Create Network Interface
-resource "aws_network_interface" "main" {
-  subnet_id       = aws_subnet.main.id
-  private_ips     = [var.private_ip]
-  security_groups = [aws_security_group.main.id]
-
-  tags = {
-    Name        = "${var.environment}-ni"
-    Environment = var.environment
-  }
-}
-
-# 8. Assign Elastic IP
-resource "aws_eip" "main" {
-  domain            = "vpc"
-  network_interface = aws_network_interface.main.id
-  depends_on         = [aws_internet_gateway.main]
-
-  tags = {
-    Name        = "${var.environment}-eip"
-    Environment = var.environment
-  }
-}
-
-# 9. Create EC2 Instance
+# 7. Create EC2 Instance
 resource "aws_instance" "main" {
   ami                         = var.ami_id
   instance_type               = var.instance_type
   availability_zone           = var.availability_zone
   key_name                    = var.key_name
   subnet_id                   = aws_subnet.main.id
+  associate_public_ip_address = true
 
   vpc_security_group_ids = [aws_security_group.main.id]
 
@@ -144,19 +121,11 @@ set -e
 
 # Update system
 apt-get update -y
-apt-get upgrade -y
 
 # Install Docker
 apt-get install -y docker.io
 systemctl start docker
 systemctl enable docker
-usermod -aG docker ubuntu
-
-# Install Python and pip
-apt-get install -y python3 python3-pip python3-venv
-
-# Install FastAPI and Uvicorn system-wide
-pip3 install fastapi uvicorn --break-system-packages
 
 # Create application directory
 mkdir -p /app
@@ -176,27 +145,27 @@ def health_check():
     return {"status": "healthy", "environment": "${var.environment}"}
 APPEOF
 
-# Create systemd service
-cat > /etc/systemd/system/fastapi.service <<'SERVICEEOF'
-[Unit]
-Description=FastAPI Application
-After=network.target
+# Create requirements.txt
+cat > /app/requirements.txt <<'REQEOF'
+fastapi
+uvicorn
+REQEOF
 
-[Service]
-User=root
-WorkingDirectory=/app
-ExecStart=/usr/bin/uvicorn main:app --host 0.0.0.0 --port 8000
-Restart=always
-RestartSec=3
+# Create Dockerfile
+cat > /app/Dockerfile <<'DOCKEREOF'
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+DOCKEREOF
 
-[Install]
-WantedBy=multi-user.target
-SERVICEEOF
-
-# Enable and start service
-systemctl daemon-reload
-systemctl enable fastapi
-systemctl start fastapi
+# Build and run Docker container
+cd /app
+docker build -t fastapi-app:v1 .
+docker run -d -p 8000:8000 --restart always --name fastapi fastapi-app:v1
 EOF
 
   tags = {
