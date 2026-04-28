@@ -13,7 +13,7 @@ output "vpc_id" {
   value       = aws_vpc.main.id
 }
 
-output "app_url" {
-  description = "FastAPI app URL"
+output "application_url" {
+  description = "FastAPI application URL"
   value       = "http://${aws_instance.main.public_ip}:8000"
 }
