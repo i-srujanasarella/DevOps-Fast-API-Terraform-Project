@@ -15,5 +15,5 @@ output "vpc_id" {
 
 output "app_url" {
   description = "FastAPI app URL"
-  value       = "http://${aws_eip.main.public_ip}:8000"
+  value       = "http://${aws_instance.main.public_ip}:8000"
 }
