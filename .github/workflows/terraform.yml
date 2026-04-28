@@ -76,23 +76,27 @@ jobs:
         env:
           EC2_HOST: ${{ secrets.EC2_DEV_HOST }}
           EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: dev-${{ github.sha }}
+          AWS_REGION: us-east-1
         run: |
           echo "$EC2_KEY" > key.pem
           chmod 600 key.pem
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'ENDSSH'
-            # Login to ECR
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
-            
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << EOF
+            # Login to ECR using full path
+            /usr/local/bin/aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
             # Stop and remove existing container
             docker stop fastapi || true
             docker rm fastapi || true
-            
+
             # Pull latest image
-            docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:dev-${{ github.sha }}
-            
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
             # Run new container
-            docker run -d -p 8000:8000 --restart always --name fastapi ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:dev-${{ github.sha }}
-          ENDSSH
+            docker run -d -p 8000:8000 --restart always --name fastapi $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          EOF
           rm -f key.pem
       
       - name: Show App URL
@@ -159,23 +163,27 @@ jobs:
         env:
           EC2_HOST: ${{ secrets.EC2_QA_HOST }}
           EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: qa-${{ github.sha }}
+          AWS_REGION: us-east-1
         run: |
           echo "$EC2_KEY" > key.pem
           chmod 600 key.pem
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'ENDSSH'
-            # Login to ECR
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
-            
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << EOF
+            # Login to ECR using full path
+            /usr/local/bin/aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
             # Stop and remove existing container
             docker stop fastapi || true
             docker rm fastapi || true
-            
+
             # Pull latest image
-            docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:qa-${{ github.sha }}
-            
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
             # Run new container
-            docker run -d -p 8000:8000 --restart always --name fastapi ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:qa-${{ github.sha }}
-          ENDSSH
+            docker run -d -p 8000:8000 --restart always --name fastapi $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          EOF
           rm -f key.pem
 
       - name: Show App URL
@@ -242,25 +250,29 @@ jobs:
         env:
           EC2_HOST: ${{ secrets.EC2_PROD_HOST }}
           EC2_KEY: ${{ secrets.EC2_SSH_KEY }}
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: prod-${{ github.sha }}
+          AWS_REGION: us-east-1
         run: |
           echo "$EC2_KEY" > key.pem
           chmod 600 key.pem
-          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << 'ENDSSH'
-            # Login to ECR
-            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
-            
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@$EC2_HOST << EOF
+            # Login to ECR using full path
+            /usr/local/bin/aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+
             # Stop and remove existing container
             docker stop fastapi || true
             docker rm fastapi || true
-            
-            # Pull latest image
-            docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:prod-${{ github.sha }}
-            
-            # Run new container
-            docker run -d -p 8000:8000 --restart always --name fastapi ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:prod-${{ github.sha }}
-          ENDSSH
-          rm -f key.pem
 
+            # Pull latest image
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+            # Run new container
+            docker run -d -p 8000:8000 --restart always --name fastapi $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          EOF
+          rm -f key.pem
+          
       - name: Show App URL
         if: github.event_name == 'push'
         run: terraform output application_url
