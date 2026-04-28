@@ -152,12 +152,14 @@ systemctl start docker
 systemctl enable docker
 usermod -aG docker ubuntu
 
-# Install Python, pip, and venv
-apt-get install -y python3 python3-pip python3.12-venv
+# Install Python and pip
+apt-get install -y python3 python3-pip python3-venv
+
+# Install FastAPI and Uvicorn system-wide
+pip3 install fastapi uvicorn --break-system-packages
 
 # Create application directory
 mkdir -p /app
-chown -R ubuntu:ubuntu /app
 
 # Create FastAPI app
 cat > /app/main.py <<'APPEOF'
@@ -174,14 +176,6 @@ def health_check():
     return {"status": "healthy", "environment": "${var.environment}"}
 APPEOF
 
-# Set up Python virtual environment
-cd /app
-python3 -m venv venv
-
-# Install dependencies using full path
-/app/venv/bin/pip install --upgrade pip
-/app/venv/bin/pip install fastapi uvicorn
-
 # Create systemd service
 cat > /etc/systemd/system/fastapi.service <<'SERVICEEOF'
 [Unit]
@@ -189,9 +183,9 @@ Description=FastAPI Application
 After=network.target
 
 [Service]
-User=ubuntu
+User=root
 WorkingDirectory=/app
-ExecStart=/app/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+ExecStart=/usr/bin/uvicorn main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=3
 
