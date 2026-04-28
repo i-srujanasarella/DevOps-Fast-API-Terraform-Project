@@ -112,6 +112,7 @@ resource "aws_instance" "main" {
   key_name                    = var.key_name
   subnet_id                   = aws_subnet.main.id
   associate_public_ip_address = true
+  user_data_replace_on_change = true   
 
   vpc_security_group_ids = [aws_security_group.main.id]
 
