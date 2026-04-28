@@ -140,28 +140,28 @@ resource "aws_instance" "main" {
   vpc_security_group_ids = [aws_security_group.main.id]
 
   user_data = <<-EOF
-              #!/bin/bash
-              set -e
+#!/bin/bash
+set -e
 
-              # Update system
-              apt-get update -y
-              apt-get upgrade -y
+# Update system
+apt-get update -y
+apt-get upgrade -y
 
-              # Install Docker
-              apt-get install -y docker.io
-              systemctl start docker
-              systemctl enable docker
-              usermod -aG docker ubuntu
+# Install Docker
+apt-get install -y docker.io
+systemctl start docker
+systemctl enable docker
+usermod -aG docker ubuntu
 
-              # Install Python, pip, and venv
-              apt-get install -y python3 python3-pip python3.12-venv
+# Install Python, pip, and venv
+apt-get install -y python3 python3-pip python3.12-venv
 
-              # Create application directory
-              mkdir -p /app
-              chown -R ubuntu:ubuntu /app
+# Create application directory
+mkdir -p /app
+chown -R ubuntu:ubuntu /app
 
-              # Create FastAPI app
-              cat > /app/main.py <<'APPEOF'
+# Create FastAPI app
+cat > /app/main.py <<'APPEOF'
 from fastapi import FastAPI
 
 app = FastAPI()
@@ -175,16 +175,16 @@ def health_check():
     return {"status": "healthy", "environment": "${var.environment}"}
 APPEOF
 
-              # Set up Python virtual environment
-              cd /app
-              python3 -m venv venv
+# Set up Python virtual environment
+cd /app
+python3 -m venv venv
 
-              # Install dependencies using full path
-              /app/venv/bin/pip install --upgrade pip
-              /app/venv/bin/pip install fastapi uvicorn
+# Install dependencies using full path
+/app/venv/bin/pip install --upgrade pip
+/app/venv/bin/pip install fastapi uvicorn
 
-              # Create systemd service so app starts automatically on reboot
-              cat > /etc/systemd/system/fastapi.service <<'SERVICEEOF'
+# Create systemd service
+cat > /etc/systemd/system/fastapi.service <<'SERVICEEOF'
 [Unit]
 Description=FastAPI Application
 After=network.target
@@ -200,11 +200,12 @@ RestartSec=3
 WantedBy=multi-user.target
 SERVICEEOF
 
-              # Enable and start service
-              systemctl daemon-reload
-              systemctl enable fastapi
-              systemctl start fastapi
-              EOF
+# Enable and start service
+systemctl daemon-reload
+systemctl enable fastapi
+systemctl start fastapi
+EOF
+
   tags = {
     Name        = "${var.environment}-web-server"
     Environment = var.environment
