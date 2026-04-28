@@ -56,10 +56,24 @@ jobs:
         if: github.event_name == 'push'
         run: terraform apply -auto-approve
 
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push'
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+      - name: Build Docker Image
+        if: github.event_name == 'push'
+        run: |
+          docker build -t ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:dev-${{ github.sha }} ./app
+
+      - name: Push Docker Image to ECR
+        if: github.event_name == 'push'
+        run: |
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:dev-${{ github.sha }}
+
       - name: Show App URL
         if: github.event_name == 'push'
-        working-directory: environments/dev  
-        run: terraform output app_url
+        run: terraform output application_url
 
   terraform-qa:
     name: Terraform QA
@@ -101,10 +115,24 @@ jobs:
         if: github.event_name == 'push'
         run: terraform apply -auto-approve
       
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push'
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+      - name: Build Docker Image
+        if: github.event_name == 'push'
+        run: |
+          docker build -t ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:qa-${{ github.sha }} ./app
+
+      - name: Push Docker Image to ECR
+        if: github.event_name == 'push'
+        run: |
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:qa-${{ github.sha }}
+
       - name: Show App URL
         if: github.event_name == 'push'
-        working-directory: environments/qa
-        run: terraform output app_url
+        run: terraform output application_url
 
   terraform-prod:
     name: Terraform Prod
@@ -146,10 +174,24 @@ jobs:
         if: github.event_name == 'push'
         run: terraform apply -auto-approve
 
+      - name: Login to Amazon ECR
+        if: github.event_name == 'push'
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+
+      - name: Build Docker Image
+        if: github.event_name == 'push'
+        run: |
+          docker build -t ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:prod-${{ github.sha }} ./app
+
+      - name: Push Docker Image to ECR
+        if: github.event_name == 'push'
+        run: |
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:prod-${{ github.sha }}
+
       - name: Show App URL
         if: github.event_name == 'push'
-        working-directory: environments/prod
-        run: terraform output app_url
+        run: terraform output application_url
 
       - name: Terraform Destroy
         if: github.event_name == 'push'
