@@ -1,6 +1,6 @@
-output "app_url" {
-  description = "FastAPI app URL"
-  value       = module.infrastructure.app_url
+output "application_url" {
+  description = "FastAPI application URL"
+  value       = module.infrastructure.application_url
 }
 
 output "instance_public_ip" {
